@@ -67,8 +67,14 @@ def process_files_in_directory(directory_path):
             sheet.write(row, 3, text)
             row += 1
 
-    workbook.save("CV_Information.xls")
+    excel_file_path = "CV_Information.xls"
+    workbook.save(excel_file_path)
     st.success("Excel file created successfully.")
+
+    # Add a download button for the Excel file
+    st.markdown("### Download Excel File")
+    with open(excel_file_path, "rb") as file:
+        st.download_button(label="Download", data=file, file_name="CV_Information.xls", mime="application/vnd.ms-excel")
 
 # Streamlit app
 def main():
