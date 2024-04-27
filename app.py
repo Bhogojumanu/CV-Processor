@@ -4,23 +4,28 @@ import streamlit as st
 import xlwt
 from PyPDF2 import PdfReader
 import docx
+import io
+
 
 # Function to extract text from a DOCX file
-def extract_text_from_docx(docx_path):
-    doc = docx.Document(docx_path)
+def extract_text_from_docx(docx_file):
+    doc = docx.Document(docx_file)
     text = ''
     for paragraph in doc.paragraphs:
         text += paragraph.text + '\n'
     return text
 
+
 # Function to extract text from a PDF file
-def extract_text_from_pdf(pdf_path):
-    with open(pdf_path, 'rb') as file:
+def extract_text_from_pdf(pdf_file):
+    pdf_contents = pdf_file.read()
+    with io.BytesIO(pdf_contents) as file:
         reader = PdfReader(file)
         text = ''
         for page_num in range(len(reader.pages)):
             text += reader.pages[page_num].extract_text()
         return text
+
 
 # Function to extract contact information from text
 def extract_contact_info(text):
@@ -34,10 +39,11 @@ def extract_contact_info(text):
 
     return emails, phones
 
-# Function to process files in a directory and extract information
-def process_files_in_directory(directory_path):
-    if not os.path.isdir(directory_path):
-        st.error("Error: Directory not found.")
+
+# Function to process uploaded files and extract information
+def process_uploaded_files(uploaded_files):
+    if not uploaded_files:
+        st.warning("No files uploaded.")
         return
 
     workbook = xlwt.Workbook()
@@ -48,24 +54,23 @@ def process_files_in_directory(directory_path):
     sheet.write(0, 3, "Text")
     row = 1
 
-    for filename in os.listdir(directory_path):
-        file_path = os.path.join(directory_path, filename)
+    for uploaded_file in uploaded_files:
+        file_extension = os.path.splitext(uploaded_file.name)[1]
+        if file_extension == '.docx':
+            text = extract_text_from_docx(uploaded_file)
+        elif file_extension == '.pdf':
+            text = extract_text_from_pdf(uploaded_file)
+        else:
+            st.warning(f"Unsupported file format: {file_extension}")
+            continue
 
-        if os.path.isfile(file_path):
-            if filename.endswith('.docx'):
-                text = extract_text_from_docx(file_path)
-            elif filename.endswith('.pdf'):
-                text = extract_text_from_pdf(file_path)
-            else:
-                continue
+        emails, phones = extract_contact_info(text)
 
-            emails, phones = extract_contact_info(text)
-
-            sheet.write(row, 0, filename)
-            sheet.write(row, 1, ", ".join(emails))
-            sheet.write(row, 2, ", ".join([f"{p[0]}-{p[1]}-{p[2]}-{p[3]}" for p in phones]))
-            sheet.write(row, 3, text)
-            row += 1
+        sheet.write(row, 0, uploaded_file.name)
+        sheet.write(row, 1, ", ".join(emails))
+        sheet.write(row, 2, ", ".join([f"{p[0]}-{p[1]}-{p[2]}-{p[3]}" for p in phones]))
+        sheet.write(row, 3, text)
+        row += 1
 
     excel_file_path = "CV_Information.xls"
     workbook.save(excel_file_path)
@@ -76,12 +81,17 @@ def process_files_in_directory(directory_path):
     with open(excel_file_path, "rb") as file:
         st.download_button(label="Download", data=file, file_name="CV_Information.xls", mime="application/vnd.ms-excel")
 
+
 # Streamlit app
 def main():
     st.title("CV Information Extraction")
-    directory_path = st.text_input("Enter directory path:", "Sample2")
+
+    # File uploader for user data upload
+    uploaded_files = st.file_uploader("Upload DOCX or PDF files", type=["docx", "pdf"], accept_multiple_files=True)
+
     if st.button("Process"):
-        process_files_in_directory(directory_path)
+        process_uploaded_files(uploaded_files)
+
 
 if __name__ == "__main__":
     main()
