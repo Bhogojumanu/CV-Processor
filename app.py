@@ -84,10 +84,10 @@ def process_uploaded_files(uploaded_files):
 
 # Streamlit app
 def main():
-    st.title("CV Information Extraction")
+    st.title("CV Processor")
 
     # File uploader for user data upload
-    uploaded_files = st.file_uploader("Upload DOCX or PDF files", type=["docx", "pdf"], accept_multiple_files=True)
+    uploaded_files = st.file_uploader("Upload your CV in DOCX or PDF file formats", type=["docx", "pdf"], accept_multiple_files=True)
 
     if st.button("Process"):
         process_uploaded_files(uploaded_files)
